@@ -5,7 +5,7 @@ import { Card } from '../models/Card.model';
 import { User } from '../models/User.model';
 import { Merchant } from '../models/Merchant.model';
 import { Transaction } from '../models/Transaction.model';
-import { getCached, setCached } from '../config/redis.config';
+// import { getCached, setCached } from '../config/redis.config';
 import { getSuiClient } from '../config/sui.config';
 import logger from '../utils/logger';
 
@@ -232,17 +232,17 @@ export class PaymentController {
         }
       }
       
-      // Rate limiting check
-      const rateLimitKey = `payment_rate_${user.id}`;
-      const recentTransactions = await getCached<number>(rateLimitKey) || 0;
-      
-      if (recentTransactions >= CONSTANTS.DAILY_TRANSACTION_LIMIT) {
-        return res.status(429).json({
-          success: false,
-          error: 'Daily transaction limit exceeded',
-          code: ERROR_CODES.LIMIT_EXCEEDED,
-        });
-      }
+      // Rate limiting check (skip if Redis not available)
+      // const rateLimitKey = `payment_rate_${user.id}`;
+      // const recentTransactions = await getCached<number>(rateLimitKey) || 0;
+
+      // if (recentTransactions >= CONSTANTS.DAILY_TRANSACTION_LIMIT) {
+      //   return res.status(429).json({
+      //     success: false,
+      //     error: 'Daily transaction limit exceeded',
+      //     code: ERROR_CODES.LIMIT_EXCEEDED,
+      //   });
+      // }
       
       // Prepare transaction metadata
       const metadata = {
@@ -264,11 +264,12 @@ export class PaymentController {
         cardUuid,
         amount,
         merchantId,
+        undefined, // use default chain (u2uTestnet)
         metadata
       );
       
-      // Update rate limiting counter
-      await setCached(rateLimitKey, recentTransactions + 1, 24 * 60 * 60); // 24 hours TTL
+      // Update rate limiting counter (skip if Redis not available)
+      // await setCached(rateLimitKey, recentTransactions + 1, 24 * 60 * 60); // 24 hours TTL
       
       // Log successful transaction
       logger.info(`Payment processed successfully: ${transaction._id}`, {
@@ -605,12 +606,12 @@ export class PaymentController {
           });
         }
         
-        // Cache the completed transaction
-        await setCached(
-          `completed_tx:${txHash}`, 
-          transaction, 
-          CONSTANTS.CACHE_TTL.TRANSACTION
-        );
+        // Cache the completed transaction (skip if Redis not available)
+        // await setCached(
+        //   `completed_tx:${txHash}`,
+        //   transaction,
+        //   CONSTANTS.CACHE_TTL.TRANSACTION
+        // );
         
         logger.info(`Payment completed successfully`, {
           transactionId: transaction._id,

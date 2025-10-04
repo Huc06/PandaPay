@@ -8,6 +8,8 @@ export interface ITransaction extends Document {
   type: 'payment' | 'topup' | 'withdraw' | 'refund';
   amount: number;
   currency: string;
+  chainId?: number;
+  chainName?: string;
   merchantId?: mongoose.Types.ObjectId;
   merchantName?: string;
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
@@ -63,8 +65,13 @@ const transactionSchema = new Schema<ITransaction>(
     },
     currency: {
       type: String,
-      default: 'SUI',
+      default: 'U2U',
     },
+    chainId: {
+      type: Number,
+      index: true,
+    },
+    chainName: String,
     merchantId: {
       type: Schema.Types.ObjectId,
       ref: 'Merchant',
@@ -83,7 +90,7 @@ const transactionSchema = new Schema<ITransaction>(
     },
     totalAmount: {
       type: Number,
-      required: true,
+      default: 0,
     },
     fromAddress: {
       type: String,

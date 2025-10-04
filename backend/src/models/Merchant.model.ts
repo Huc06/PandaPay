@@ -5,6 +5,7 @@ export interface IMerchant extends Document {
   merchantName: string;
   businessType: string;
   walletAddress: string;
+  evmWalletAddress?: string;
   email: string;
   phoneNumber: string;
   address: {
@@ -57,6 +58,12 @@ const merchantSchema = new Schema<IMerchant>(
       type: String,
       required: true,
       unique: true,
+    },
+    evmWalletAddress: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
     },
     email: {
       type: String,

@@ -1,9 +1,10 @@
 import jwt from 'jsonwebtoken';
 import { User, IUser } from '../models/User.model';
-import { generateRandomToken, generateOTP } from './encryption.service';
+import { generateRandomToken, generateOTP, encryptPrivateKey } from './encryption.service';
 import { getRedisClient } from '../config/redis.config';
 import { CONSTANTS } from '../config/constants';
 import logger from '../utils/logger';
+import { EVMWalletService } from './evm-wallet.service';
 
 export class AuthService {
   private get redisClient() {
@@ -20,17 +21,27 @@ export class AuthService {
     const existingUser = await User.findOne({
       $or: [{ email: userData.email }, { phoneNumber: userData.phoneNumber }]
     });
-    
+
     if (existingUser) {
       throw new Error('User already exists with this email or phone number');
     }
-    
-    // Create user
-    const user = await User.create(userData);
-    
+
+    // Create EVM wallet for the new user
+    const evmWallet = EVMWalletService.createWallet();
+    const encryptedEvmPrivateKey = encryptPrivateKey(evmWallet.privateKey!);
+
+    // Create user with EVM wallet
+    const user = await User.create({
+      ...userData,
+      evmWalletAddress: evmWallet.address,
+      evmEncryptedPrivateKey: encryptedEvmPrivateKey,
+    });
+
     // Send verification email
     await this.sendVerificationEmail(user);
-    
+
+    logger.info(`Created EVM wallet for user ${user.email}: ${evmWallet.address}`);
+
     return user;
   }
 

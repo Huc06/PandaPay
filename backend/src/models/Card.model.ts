@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface ICard extends Document {
   cardUuid: string;
   userId: mongoose.Types.ObjectId;
-  cardType: 'standard' | 'premium' | 'corporate';
+  cardType: 'virtual' | 'physical';
   cardNumber: string;
   isActive: boolean;
   isPrimary: boolean;
@@ -39,8 +39,8 @@ const cardSchema = new Schema<ICard>(
     },
     cardType: {
       type: String,
-      enum: ['standard', 'premium', 'corporate'],
-      default: 'standard',
+      enum: ['virtual', 'physical'],
+      default: 'virtual',
     },
     cardNumber: {
       type: String,

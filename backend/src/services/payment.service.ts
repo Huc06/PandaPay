@@ -1,6 +1,3 @@
-import { Transaction } from '@mysten/sui/transactions';
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
-import { getSuiClient } from '../config/sui.config';
 import { User, IUser } from '../models/User.model';
 import { Card, ICard } from '../models/Card.model';
 import { Transaction as TransactionModel, ITransaction } from '../models/Transaction.model';
@@ -9,80 +6,86 @@ import { decryptPrivateKey } from './encryption.service';
 import { getCached, setCached } from '../config/redis.config';
 import { CONSTANTS } from '../config/constants';
 import logger from '../utils/logger';
+import { EVMWalletService } from './evm-wallet.service';
+import { getEVMChain, DEFAULT_EVM_CHAIN } from '../config/evm.config';
 
 export class PaymentService {
-  private get suiClient() {
-    return getSuiClient();
-  }
-
   async processPayment(
     cardUuid: string,
     amount: number,
     merchantId: string,
+    chainKey?: string,
     metadata?: any
   ): Promise<ITransaction> {
     try {
       // 1. Validate card
       const card = await this.validateCard(cardUuid);
-      
+
       // 2. Get user
-      const user = await User.findById(card.userId).select('+encryptedPrivateKey');
+      const user = await User.findById(card.userId).select('+evmEncryptedPrivateKey');
       if (!user) throw new Error('User not found');
-      
+
       // 3. Check limits
       await this.checkTransactionLimits(user, card, amount);
-      
+
       // 4. Get merchant
       const merchant = await Merchant.findOne({ merchantId });
       if (!merchant || !merchant.isActive) throw new Error('Invalid merchant');
-      
-      // 5. Create pending transaction
+
+      // 5. Get EVM chain config
+      const chain = getEVMChain(chainKey || DEFAULT_EVM_CHAIN);
+      if (!chain) throw new Error('Invalid chain configuration');
+
+      // 6. Create pending transaction
       const transaction = await TransactionModel.create({
         userId: user._id,
         cardId: card._id,
         cardUuid,
         type: 'payment',
         amount,
-        currency: 'SUI',
+        currency: chain.symbol,
+        chainId: chain.chainId,
+        chainName: chain.name,
         merchantId: merchant._id,
         merchantName: merchant.merchantName,
         status: 'pending',
-        fromAddress: user.walletAddress,
-        toAddress: merchant.walletAddress,
+        fromAddress: user.evmWalletAddress,
+        toAddress: merchant.evmWalletAddress,
         metadata,
       });
-      
+
       try {
-        // 6. Build and execute blockchain transaction
+        // 7. Build and execute blockchain transaction
         const txResult = await this.executeBlockchainTransaction(
           user,
-          merchant.walletAddress,
-          amount
+          merchant.evmWalletAddress!,
+          amount,
+          chain
         );
-        
-        // 7. Update transaction status
+
+        // 8. Update transaction status
         transaction.status = 'completed';
-        transaction.txHash = txResult.digest;
-        transaction.gasFee = Number(txResult.effects?.gasUsed?.computationCost) || 0;
+        transaction.txHash = txResult.txHash;
+        transaction.gasFee = Number(txResult.gasUsed) || 0;
         transaction.completedAt = new Date();
         await transaction.save();
-        
-        // 8. Update card usage
+
+        // 9. Update card usage
         await this.updateCardUsage(card, amount);
-        
-        // 9. Update merchant stats
+
+        // 10. Update merchant stats
         await this.updateMerchantStats(merchant, amount);
-        
-        // 10. Send notifications
+
+        // 11. Send notifications
         // TODO: Send payment notification
-        
-        // 11. Webhook to merchant
+
+        // 12. Webhook to merchant
         if (merchant.webhookUrl) {
           await this.sendWebhook(merchant, transaction);
         }
-        
+
         return transaction;
-        
+
       } catch (error) {
         // Update transaction as failed
         transaction.status = 'failed';
@@ -90,7 +93,7 @@ export class PaymentService {
         await transaction.save();
         throw error;
       }
-      
+
     } catch (error) {
       logger.error('Payment processing error:', error);
       throw error;
@@ -144,42 +147,28 @@ export class PaymentService {
   private async executeBlockchainTransaction(
     user: IUser,
     recipientAddress: string,
-    amount: number
+    amount: number,
+    chainConfig: any
   ) {
     // Decrypt private key
-    const privateKey = decryptPrivateKey(user.encryptedPrivateKey!);
-    const keypair = Ed25519Keypair.fromSecretKey(Buffer.from(privateKey, 'base64'));
-    
-    // Build transaction
-    const tx = new Transaction();
-    tx.setSender(user.walletAddress!);
-    
-    // Split coins for payment
-    const [paymentCoin] = tx.splitCoins(tx.gas, [
-      tx.pure.u64(amount * 1_000_000_000) // Convert to MIST
-    ]);
-    
-    // Transfer to merchant
-    tx.transferObjects([paymentCoin], tx.pure.address(recipientAddress));
-    
-    // Set gas budget
-    tx.setGasBudget(CONSTANTS.DEFAULT_GAS_BUDGET);
-    
-    // Execute transaction
-    const result = await this.suiClient.signAndExecuteTransaction({
-      transaction: tx,
-      signer: keypair,
-      options: {
-        showEffects: true,
-        showObjectChanges: true,
-      },
+    const privateKey = decryptPrivateKey(user.evmEncryptedPrivateKey!);
+
+    // Execute EVM transfer
+    const result = await EVMWalletService.transfer({
+      privateKey,
+      toAddress: recipientAddress,
+      amount: amount.toString(),
+      chainConfig,
     });
-    
-    // Wait for transaction to be indexed
-    await this.suiClient.waitForTransaction({
-      digest: result.digest,
+
+    logger.info('EVM transaction completed:', {
+      txHash: result.txHash,
+      from: result.from,
+      to: result.to,
+      amount: result.amount,
+      chain: chainConfig.name,
     });
-    
+
     return result;
   }
 
@@ -539,6 +528,7 @@ export class PaymentService {
       originalTransaction.cardUuid!,
       originalTransaction.amount,
       originalTransaction.merchantId!.toString(),
+      undefined,
       {
         ...originalTransaction.metadata,
         retryOf: originalTransaction._id,

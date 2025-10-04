@@ -8,6 +8,8 @@ export interface IUser extends Document {
   fullName: string;
   walletAddress?: string;
   encryptedPrivateKey?: string;
+  evmWalletAddress?: string;
+  evmEncryptedPrivateKey?: string;
   role: 'user' | 'merchant' | 'admin';
   dailyLimit: number;
   monthlyLimit: number;
@@ -63,6 +65,16 @@ const userSchema = new Schema<IUser>(
       index: true,
     },
     encryptedPrivateKey: {
+      type: String,
+      select: false, // Don't return by default
+    },
+    evmWalletAddress: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
+    },
+    evmEncryptedPrivateKey: {
       type: String,
       select: false, // Don't return by default
     },
