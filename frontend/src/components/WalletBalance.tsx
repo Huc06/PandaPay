@@ -20,7 +20,7 @@ export default function WalletBalance() {
       <div>
         <p className="text-sm text-gray-600">Số dư</p>
         <p className="text-lg font-bold text-blue-600">
-          {wallet?.balance || 0} SUI
+          {wallet?.balance?.toFixed(4) || 0} U2U
         </p>
       </div>
     </div>

@@ -81,7 +81,7 @@ export default function PaymentPage() {
           
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Số tiền (SUI)
+              Số tiền (U2U)
             </label>
             <div className="relative">
               <input
@@ -93,7 +93,7 @@ export default function PaymentPage() {
                 step="0.01"
                 disabled={isScanning || isProcessing}
               />
-              <div className="absolute right-3 top-3 text-gray-500">SUI</div>
+              <div className="absolute right-3 top-3 text-gray-500">U2U</div>
             </div>
             {amount && (
               <p className="mt-2 text-sm text-gray-600">

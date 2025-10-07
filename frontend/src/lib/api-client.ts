@@ -44,7 +44,7 @@ api.interceptors.response.use(
 );
 
 // Auth APIs
-export async function loginAPI(email: string, password: string) {
+export async function loginAPI(email: string, password: string): Promise<any> {
   return api.post('/auth/login', { email, password });
 }
 
@@ -53,32 +53,32 @@ export async function registerAPI(data: {
   password: string;
   phoneNumber: string;
   fullName: string;
-}) {
+}): Promise<any> {
   return api.post('/auth/register', data);
 }
 
-export async function logoutAPI() {
+export async function logoutAPI(): Promise<any> {
   return api.post('/auth/logout');
 }
 
-export async function verifyOtpAPI(phoneNumber: string, otp: string) {
+export async function verifyOtpAPI(phoneNumber: string, otp: string): Promise<any> {
   return api.post('/auth/verify-email', { phoneNumber, otp });
 }
 
-export async function resendOtpAPI(phoneNumber: string) {
+export async function resendOtpAPI(phoneNumber: string): Promise<any> {
   return api.post('/auth/resend-otp', { phoneNumber });
 }
 
 // User APIs
-export async function getUserProfileAPI() {
+export async function getUserProfileAPI(): Promise<any> {
   return api.get('/user/profile');
 }
 
-export async function updateUserProfileAPI(data: any) {
+export async function updateUserProfileAPI(data: any): Promise<any> {
   return api.put('/user/profile', data);
 }
 
-export async function setPinAPI(pin: string, confirmPin: string) {
+export async function setPinAPI(pin: string, confirmPin: string): Promise<any> {
   return api.post('/user/pin/set', { pin, confirmPin });
 }
 
@@ -87,36 +87,36 @@ export async function createCardAPI(data: {
   cardType: 'standard' | 'premium' | 'corporate';
   cardName?: string;
   limits?: { daily: number; monthly: number };
-}) {
+}): Promise<any> {
   return api.post('/card/create', data);
 }
 
-export async function getUserCardsAPI() {
+export async function getUserCardsAPI(): Promise<any> {
   return api.get('/card/');
 }
 
-export async function getCardAPI(cardId: string) {
+export async function getCardAPI(cardId: string): Promise<any> {
   return api.get(`/card/${cardId}`);
 }
 
-export async function activateCardAPI(cardId: string) {
+export async function activateCardAPI(cardId: string): Promise<any> {
   return api.post(`/card/${cardId}/activate`);
 }
 
-export async function blockCardAPI(cardId: string, reason?: string) {
+export async function blockCardAPI(cardId: string, reason?: string): Promise<any> {
   return api.post(`/card/${cardId}/block`, { reason });
 }
 
-export async function unblockCardAPI(cardId: string) {
+export async function unblockCardAPI(cardId: string): Promise<any> {
   return api.post(`/card/${cardId}/unblock`);
 }
 
-export async function setPrimaryCardAPI(cardId: string) {
+export async function setPrimaryCardAPI(cardId: string): Promise<any> {
   return api.post(`/card/${cardId}/set-primary`);
 }
 
 // Payment APIs
-export async function validatePaymentAPI(request: PaymentRequest) {
+export async function validatePaymentAPI(request: PaymentRequest): Promise<any> {
   return api.post('/payment/validate', request);
 }
 
@@ -130,32 +130,32 @@ export async function getPaymentHistoryAPI(params?: {
   status?: string;
   startDate?: string;
   endDate?: string;
-}) {
+}): Promise<any> {
   return api.get('/payment/history', { params });
 }
 
-export async function refundTransactionAPI(txId: string, reason?: string) {
+export async function refundTransactionAPI(txId: string, reason?: string): Promise<any> {
   return api.post(`/payment/${txId}/refund`, { reason });
 }
 
-// Wallet APIs
-export async function createWalletAPI() {
-  return api.post('/wallet/create');
+// EVM Wallet APIs
+export async function getEVMWalletBalanceAPI(chain: string = 'u2uTestnet'): Promise<any> {
+  return api.get(`/evm-wallet/balance/${chain}`);
 }
 
-export async function getWalletBalanceAPI() {
-  return api.get('/wallet/balance');
+export async function transferEVMAPI(data: {
+  toAddress: string;
+  amount: string;
+  chain?: string;
+}): Promise<any> {
+  return api.post('/evm-wallet/transfer', data);
 }
 
 export async function getWalletTransactionsAPI(params?: {
   page?: number;
   limit?: number;
-}) {
-  return api.get('/wallet/transactions', { params });
-}
-
-export async function requestFaucetAPI() {
-  return api.post('/wallet/faucet');
+}): Promise<any> {
+  return api.get('/payment/history', { params });
 }
 
 // Merchant APIs (if user is merchant)
@@ -165,10 +165,10 @@ export async function registerMerchantAPI(data: {
   businessType: string;
   address: string;
   webhookUrl?: string;
-}) {
+}): Promise<any> {
   return api.post('/merchant/register', data);
 }
 
-export async function getMerchantInfoAPI(merchantId: string) {
+export async function getMerchantInfoAPI(merchantId: string): Promise<any> {
   return api.get(`/merchant/info/${merchantId}`);
 }

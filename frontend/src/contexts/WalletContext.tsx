@@ -2,15 +2,13 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Wallet } from '@/types';
-import { getWalletBalanceAPI, createWalletAPI, requestFaucetAPI } from '@/lib/api-client';
+import { getEVMWalletBalanceAPI } from '@/lib/api-client';
 import { useAuth } from './AuthContext';
 
 interface WalletContextType {
   wallet: Wallet | null;
   loading: boolean;
-  createWallet: () => Promise<void>;
   refreshBalance: () => Promise<void>;
-  requestFaucet: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -38,45 +36,26 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const createWallet = async () => {
-    setLoading(true);
-    try {
-      const response = await createWalletAPI();
-      if (response.success) {
-        setWallet({
-          address: response.wallet.address,
-          balance: 0,
-          tokens: []
-        });
-      }
-    } catch (error) {
-      console.error('Failed to create wallet:', error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const refreshBalance = async () => {
     // Don't try to refresh if user is not authenticated
-    if (!user) {
-      console.log('No authenticated user, skipping balance refresh');
+    if (!user || !user.evmWalletAddress) {
+      console.log('No authenticated user or EVM wallet, skipping balance refresh');
       return;
     }
-    
+
     setLoading(true);
     try {
-      const response = await getWalletBalanceAPI();
+      const response = await getEVMWalletBalanceAPI('u2uTestnet');
       if (response.success) {
-        setWallet(prev => ({
-          address: response.wallet?.address || prev?.address || '',
-          balance: parseFloat(response.balance.sui) / 1000000000, // Convert MIST to SUI
-          tokens: response.balance.coins?.map((coin: any) => ({
-            symbol: coin.type.includes('SUI') ? 'SUI' : 'UNKNOWN',
-            name: coin.type.includes('SUI') ? 'Sui Token' : 'Unknown Token',
-            balance: parseFloat(coin.balance) / 1000000000
-          })) || []
-        }));
+        setWallet({
+          address: user.evmWalletAddress,
+          balance: parseFloat(response.balance),
+          tokens: [{
+            symbol: 'U2U',
+            name: 'U2U Token',
+            balance: parseFloat(response.balance)
+          }]
+        });
       }
     } catch (error: any) {
       // Only log non-auth errors
@@ -88,26 +67,9 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const requestFaucet = async () => {
-    setLoading(true);
-    try {
-      const response = await requestFaucetAPI();
-      if (response.success) {
-        // Refresh balance after faucet request
-        setTimeout(() => refreshBalance(), 2000);
-      }
-      return response;
-    } catch (error) {
-      console.error('Failed to request faucet:', error);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <WalletContext.Provider
-      value={{ wallet, loading, createWallet, refreshBalance, requestFaucet }}
+      value={{ wallet, loading, refreshBalance }}
     >
       {children}
     </WalletContext.Provider>

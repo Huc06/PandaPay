@@ -3,14 +3,14 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWalletContext } from '@/contexts/WalletContext';
-import { getUserCardsAPI, getPaymentHistoryAPI } from '@/lib/api-client';
+import { getUserCardsAPI, getPaymentHistoryAPI, getEVMWalletBalanceAPI } from '@/lib/api-client';
 import TransactionHistory from '@/components/TransactionHistory';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Wallet, TrendingUp, CreditCard, Activity } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { wallet, loading: walletLoading, refreshBalance, createWallet } = useWalletContext();
+  const { wallet, loading: walletLoading, refreshBalance } = useWalletContext();
   const [cards, setCards] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,15 +83,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleCreateWallet = async () => {
-    try {
-      await createWallet();
-      await refreshBalance();
-    } catch (error) {
-      console.error('Failed to create wallet:', error);
-    }
-  };
-
   // Generate chart data from transactions
   const chartData = React.useMemo(() => {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -143,23 +134,6 @@ export default function DashboardPage() {
     );
   }
 
-  // Handle case where user doesn't have a wallet yet
-  if (!wallet && !walletLoading) {
-    return (
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold mb-4">Chào mừng đến với NFC Payment</h1>
-          <p className="text-gray-600 mb-8">Bạn cần tạo ví để bắt đầu sử dụng dịch vụ</p>
-          <button
-            onClick={handleCreateWallet}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
-          >
-            Tạo ví mới
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -187,7 +161,7 @@ export default function DashboardPage() {
             <Wallet className="w-8 h-8 text-blue-600" />
             <span className="text-sm text-green-600 font-semibold">+12.5%</span>
           </div>
-          <p className="text-2xl font-bold">{wallet?.balance || 0} SUI</p>
+          <p className="text-2xl font-bold">{wallet?.balance?.toFixed(4) || 0} U2U</p>
           <p className="text-gray-600 text-sm">Số dư hiện tại</p>
         </div>
 
@@ -196,7 +170,7 @@ export default function DashboardPage() {
             <TrendingUp className="w-8 h-8 text-green-600" />
             <span className="text-sm text-green-600 font-semibold">+8.2%</span>
           </div>
-          <p className="text-2xl font-bold">{stats?.totalSpent || 0} SUI</p>
+          <p className="text-2xl font-bold">{stats?.totalSpent?.toFixed(4) || 0} U2U</p>
           <p className="text-gray-600 text-sm">Tổng chi tiêu tháng</p>
         </div>
 

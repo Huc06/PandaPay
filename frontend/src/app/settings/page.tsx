@@ -83,7 +83,7 @@ export default function SettingsPage() {
         <div className="grid md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Giới hạn hàng ngày (SUI)
+              Giới hạn hàng ngày (U2U)
             </label>
             <input
               type="number"
@@ -94,7 +94,7 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Giới hạn hàng tháng (SUI)
+              Giới hạn hàng tháng (U2U)
             </label>
             <input
               type="number"

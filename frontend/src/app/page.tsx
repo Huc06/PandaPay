@@ -13,7 +13,7 @@ export default function HomePage() {
       {/* Hero Section */}
       <div className="text-center mb-12">
         <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-          NFC Payment với Sui Blockchain
+          NFC Payment với U2U Blockchain
         </h1>
         <p className="text-xl text-gray-600 mb-8">
           Thanh toán nhanh chóng, an toàn và chi phí thấp
@@ -55,7 +55,7 @@ export default function HomePage() {
         <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all">
           <DollarSign className="w-12 h-12 text-purple-600 mb-4" />
           <h3 className="text-lg font-semibold mb-2">Chi phí thấp</h3>
-          <p className="text-gray-600">Gas fee chỉ ~0.001 SUI</p>
+          <p className="text-gray-600">Gas fee chỉ ~0.001 U2U</p>
         </div>
       </div>
 
@@ -72,7 +72,7 @@ export default function HomePage() {
             <p className="text-gray-600">Giao dịch</p>
           </div>
           <div className="text-center">
-            <p className="text-3xl font-bold text-purple-600">12,345 SUI</p>
+            <p className="text-3xl font-bold text-purple-600">12,345 U2U</p>
             <p className="text-gray-600">Tổng khối lượng</p>
           </div>
         </div>

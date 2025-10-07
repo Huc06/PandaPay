@@ -204,6 +204,7 @@ export class PaymentService {
     
     const [transactions, total] = await Promise.all([
       TransactionModel.find({ userId })
+      
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)

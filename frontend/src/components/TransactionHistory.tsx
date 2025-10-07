@@ -57,10 +57,10 @@ export default function TransactionHistory({ transactions }: TransactionHistoryP
           <div className="flex items-center space-x-3">
             <div className="text-right">
               <p className="font-bold">
-                {tx.type === 'payment' ? '-' : '+'}{tx.amount} SUI
+                {tx.type === 'payment' ? '-' : '+'}{tx.amount} U2U
               </p>
               <p className="text-xs text-gray-500">
-                Gas: {tx.gasFee} SUI
+                Gas: {tx.gasFee} U2U
               </p>
             </div>
             {getStatusIcon(tx.status)}

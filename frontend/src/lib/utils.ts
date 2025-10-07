@@ -5,14 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency: string = 'SUI'): string {
+export function formatCurrency(amount: number, currency: string = 'U2U'): string {
   if (currency === 'VND') {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
     }).format(amount);
   }
-  
+
   return `${amount.toFixed(4)} ${currency}`;
 }
 
@@ -50,11 +50,11 @@ export function debounce<T extends (...args: any[]) => any>(
   };
 }
 
-export function validateSuiAddress(address: string): boolean {
-  return /^0x[a-fA-F0-9]{64}$/.test(address);
+export function validateEvmAddress(address: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
 export function calculateGasFee(gasUsed: number): number {
-  // Convert from MIST to SUI
-  return gasUsed / 1_000_000_000;
+  // Convert from wei to U2U (18 decimals)
+  return gasUsed / 1_000_000_000_000_000_000;
 }

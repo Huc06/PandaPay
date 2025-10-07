@@ -49,7 +49,7 @@ export default function PaymentModal({
             </p>
             <div className="bg-green-50 rounded-lg p-4 mb-4">
               <p className="text-sm text-gray-600">Số tiền</p>
-              <p className="text-lg font-bold">{amount} SUI</p>
+              <p className="text-lg font-bold">{amount} U2U</p>
             </div>
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
               <p className="text-sm text-gray-600">Transaction Hash</p>
