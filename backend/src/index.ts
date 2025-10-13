@@ -15,6 +15,9 @@ import { connectDatabase } from './config/database';
 // import { connectRedis } from './config/redis.config';
 import { initSuiClient } from './config/sui.config';
 
+// Import services
+import { U2UContractService } from './services/u2u-contract.service';
+
 // Import middleware
 import { corsMiddleware } from './middleware/cors.middleware';
 import { errorMiddleware } from './middleware/error.middleware';
@@ -99,6 +102,11 @@ async function startServer() {
     // Initialize Sui client
     await initSuiClient();
     logger.info('✅ Sui client initialized');
+
+    // Initialize U2U Contract Service
+    const u2uChain = process.env.U2U_CHAIN || 'u2u';
+    U2UContractService.initialize(u2uChain);
+    logger.info('✅ U2U Contract Service initialized');
 
     // Start server
     server.listen(PORT, () => {

@@ -7,6 +7,7 @@ import cardRoutes from './card.routes';
 import userRoutes from './user.routes';
 import merchantRoutes from './merchant.routes';
 import adminRoutes from './admin.routes';
+import u2uContractRoutes from './u2u-contract.routes';
 
 const router = Router();
 
@@ -26,6 +27,7 @@ router.get('/', (_req, res) => {
       user: '/api/user',
       merchant: '/api/merchant',
       admin: '/api/admin',
+      u2uContract: '/api/u2u-contract',
     },
   });
 });
@@ -39,6 +41,7 @@ router.use('/card', cardRoutes);
 router.use('/user', userRoutes);
 router.use('/merchant', merchantRoutes);
 router.use('/admin', adminRoutes);
+router.use('/u2u-contract', u2uContractRoutes);
 
 // 404 handler for API routes
 router.use('*', (_req, res) => {
