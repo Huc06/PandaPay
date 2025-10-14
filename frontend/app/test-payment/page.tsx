@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,6 +77,22 @@ interface PosSessionResult {
     error?: string;
 }
 
+interface WalletInfo {
+    address: string;
+    balance: string;
+}
+
+interface U2UPaymentResponse {
+    success: boolean;
+    data?: {
+        transactionId: string;
+        txHash: string;
+    };
+    message?: string;
+    error?: string;
+    code?: string;
+}
+
 export default function TestPaymentPage() {
     const [amount, setAmount] = useState("0.05");
     const [pin, setPin] = useState(TEST_DATA.pin);
@@ -95,7 +112,7 @@ export default function TestPaymentPage() {
     const [isScanning, setIsScanning] = useState(false);
     const [isWriting, setIsWriting] = useState(false);
     const [autoLoginStatus, setAutoLoginStatus] = useState<string>("idle");
-    const [walletInfo, setWalletInfo] = useState<any>(null);
+    const [walletInfo, setWalletInfo] = useState<WalletInfo | null>(null);
 
     // Check server health and NFC support on load
     useEffect(() => {
@@ -487,7 +504,7 @@ export default function TestPaymentPage() {
                 }
             );
 
-            const data: any = await response.json();
+            const data = await response.json() as U2UPaymentResponse;
             console.log("U2U Contract payment response:", data);
 
             // Transform U2U Contract response to PaymentResult format
@@ -633,7 +650,7 @@ export default function TestPaymentPage() {
                             <XCircle className="h-4 w-4" />
                             <AlertDescription>
                                 <strong>Auto-login failed.</strong> Please create account manually at{" "}
-                                <a href="/" className="underline">home page</a> or use these credentials:
+                                <Link href="/" className="underline">home page</Link> or use these credentials:
                                 <br />
                                 Email: {TEST_DATA.customerEmail}
                                 <br />

@@ -16,7 +16,7 @@ interface MerchantHeaderProps {
 
 export default function MerchantHeader({
     containerClassName = "max-w-7xl",
-    view,
+    // view,
     onViewChange,
 }: MerchantHeaderProps) {
     const [menuOpen, setMenuOpen] = useState(false);

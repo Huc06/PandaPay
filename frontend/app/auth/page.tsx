@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 // import { forgotPasswordAPI } from "@/lib/api-client";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
 
 type AuthMode = "login" | "register" | "verify";

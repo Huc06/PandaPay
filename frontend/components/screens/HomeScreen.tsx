@@ -191,10 +191,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                     success: true,
                     message: `Payment successful! Transaction ID: ${response.data.transactionId}`,
                     transaction: {
-                        id: response.data.transactionId?.toString() || "",
+                        transactionId: response.data.transactionId?.toString() || "",
                         txHash: response.data.txHash,
                         amount: parseFloat(qrPayload.amount),
+                        gasFee: 0.0001,
+                        totalAmount: parseFloat(qrPayload.amount) + 0.0001,
                         status: "completed",
+                        explorerUrl: `https://u2uscan.xyz/tx/${response.data.txHash}`,
                     },
                 });
 
@@ -412,11 +415,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                                 {qrPayload.merchantAddress}
                             </span>
                         </div>
-                        {paymentResult.transaction?.id && (
+                        {paymentResult.transaction?.transactionId && (
                             <div className="flex justify-between">
                                 <span>TX ID:</span>
                                 <span className="font-bold">
-                                    #{paymentResult.transaction.id}
+                                    #{paymentResult.transaction.transactionId}
                                 </span>
                             </div>
                         )}

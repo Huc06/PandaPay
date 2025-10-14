@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ExternalLink, QrCode } from "lucide-react";
@@ -35,7 +35,7 @@ export default function QRPaymentTerminal() {
     );
 
     // Socket integration for real-time QR updates
-    const { isConnected, qrStatus, joinQRRoom, leaveQRRoom, resetQRStatus } =
+    const { isConnected, qrStatus, joinQRRoom } =
         useSocket({
             enableQRUpdates: true,
             qrRequestId: merchantRequest?.id,
@@ -134,7 +134,7 @@ export default function QRPaymentTerminal() {
                         )}`
                     );
                     return;
-                } catch (e) {
+                } catch {
                     console.log("❌ 400 error but not JSON:", responseText);
                     alert(`400 Bad Request: ${responseText}`);
                     return;

@@ -16,6 +16,7 @@ import {
     ShoppingCart,
 } from "lucide-react";
 import { useU2UContract } from "@/hooks/useU2UContract";
+import type { CreatePaymentResult, TransactionDetails } from "@/lib/u2u-contract-api";
 
 export default function U2UPaymentDemo() {
     // Form states
@@ -26,8 +27,8 @@ export default function U2UPaymentDemo() {
     const [businessName, setBusinessName] = useState("");
 
     // Result states
-    const [paymentResult, setPaymentResult] = useState<any>(null);
-    const [transactionDetails, setTransactionDetails] = useState<any>(null);
+    const [paymentResult, setPaymentResult] = useState<CreatePaymentResult | null>(null);
+    const [transactionDetails, setTransactionDetails] = useState<TransactionDetails | null>(null);
     const [step, setStep] = useState<
         "idle" | "creating" | "confirming" | "completed"
     >("idle");

@@ -1,31 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
     Loader2,
-    Nfc,
     CreditCard,
     CheckCircle,
     XCircle,
     ExternalLink,
     Wifi,
-    Pin,
-    Key,
     LockKeyhole,
 } from "lucide-react";
 import {
     PaymentState,
     StateData,
     NDEFMessage,
-    NDEFRecord,
     PaymentResult,
-    PosSessionResult,
 } from "./types";
 
 function getStateData(state: PaymentState, amount: string): StateData {
@@ -112,12 +105,12 @@ export default function NFCTerminal() {
     const [amount, setAmount] = useState("0.00");
     const [description, setDescription] = useState<string>("");
     const [pin, setPin] = useState("");
-    const [cardUuid, setCardUuid] = useState("");
+    // const [cardUuid, setCardUuid] = useState("");
     const [serverStatus, setServerStatus] = useState<
         "unknown" | "online" | "offline"
     >("unknown");
     const [nfcSupported, setNfcSupported] = useState<boolean | null>(null);
-    const [posSession, setPosSession] = useState<PosSessionResult | null>(null);
+    // const [posSession, setPosSession] = useState<PosSessionResult | null>(null);
     const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(
         null
     );
@@ -143,6 +136,7 @@ export default function NFCTerminal() {
         checkServerHealth();
         checkNFCSupport();
         loadMerchantAddress();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const loadMerchantAddress = async () => {
@@ -266,38 +260,42 @@ export default function NFCTerminal() {
         }
     };
 
-    const initiatePaymentWithNFC = async (uuid: string) => {
-        setPosSession(null);
+    const initiatePaymentWithNFC = async (_uuid: string) => {
+        // setPosSession(null);
         setPaymentResult(null);
 
-        try {
-            const res = await fetch(`${backendUrl}/api/pos/initiate`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    cardUuid: uuid,
-                    amount: parseFloat(amount),
-                    merchantId: "mch_593200537dff4e71",
-                    terminalId: "MAIN_COUNTER_01",
-                    description: "NFC Payment",
-                }),
-            });
+        // For now, skip POS initiation and go straight to payment
+        setCurrentState("pin");
 
-            const data: PosSessionResult = await res.json();
-            setPosSession(data);
+        // TODO: Implement actual POS initiation if needed
+        // try {
+        //     const res = await fetch(`${backendUrl}/api/pos/initiate`, {
+        //         method: "POST",
+        //         headers: { "Content-Type": "application/json" },
+        //         body: JSON.stringify({
+        //             cardUuid: uuid,
+        //             amount: parseFloat(amount),
+        //             merchantId: "mch_593200537dff4e71",
+        //             terminalId: "MAIN_COUNTER_01",
+        //             description: "NFC Payment",
+        //         }),
+        //     });
 
-            if (data.success) {
-                setCardUuid(uuid);
-                setCurrentState("pin");
-            } else {
-                console.error("POS initiation failed:", data.error);
-                setCurrentState("failed");
-            }
-        } catch (err) {
-            console.error("Backend error during initiate:", err);
-            setPosSession({ success: false, error: "Backend error" });
-            setCurrentState("failed");
-        }
+        //     const data: PosSessionResult = await res.json();
+        //     setPosSession(data);
+
+        //     if (data.success) {
+        //         setCardUuid(uuid);
+        //         setCurrentState("pin");
+        //     } else {
+        //         console.error("POS initiation failed:", data.error);
+        //         setCurrentState("failed");
+        //     }
+        // } catch (err) {
+        //     console.error("Backend error during initiate:", err);
+        //     setPosSession({ success: false, error: "Backend error" });
+        //     setCurrentState("failed");
+        // }
     };
 
     const processPayment = async () => {
@@ -334,7 +332,19 @@ export default function NFCTerminal() {
                 }
             );
 
-            const data: any = await res.json();
+            const data = await res.json() as {
+                success: boolean;
+                data?: {
+                    transactionId: string;
+                    txHash: string;
+                    amount: number;
+                    gasFee?: number;
+                    totalAmount?: number;
+                    explorerUrl?: string;
+                };
+                message?: string;
+                error?: string;
+            };
             console.log("U2U Contract payment response:", data);
 
             // Transform U2U Contract response to PaymentResult format
@@ -372,10 +382,10 @@ export default function NFCTerminal() {
 
     const resetTerminal = () => {
         setCurrentState("ready");
-        setPosSession(null);
+        // setPosSession(null);
         setPaymentResult(null);
         setPin("");
-        setCardUuid("");
+        // setCardUuid("");
         setAmount("0.00");
     };
 
