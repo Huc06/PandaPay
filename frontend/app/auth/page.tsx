@@ -23,8 +23,7 @@ export default function AuthPage() {
     const [confirmPassword, setConfirmPassword] = useState("");
     // const [otp, setOtp] = useState("");
 
-    const { login, register, user } = useAuth();
-    const router = useRouter();
+    const { login, register } = useAuth();
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -32,25 +31,16 @@ export default function AuthPage() {
         setError("");
 
         try {
+            console.log("🔐 Starting login...");
             const ok = await login(email, password);
-            if (!ok) {
-                alert("Đăng nhập thất bại, vui lòng kiểm tra lại thông tin.");
-            }
-            // Fetch profile to determine role-based redirect
-            try {
-                if (!user) return;
+            console.log("🔐 Login result:", ok);
 
-                const role = user.role;
-                if (role === "admin") {
-                    router.push("/admin");
-                } else if (role === "user") {
-                    router.push("/account");
-                } else {
-                    router.push("/merchant");
-                }
-            } catch {
-                router.push("/auth");
+            if (!ok) {
+                setError("Đăng nhập thất bại. Vui lòng kiểm tra lại email và mật khẩu.");
+            } else {
+                console.log("✅ Login successful, waiting for redirect...");
             }
+            // AuthContext will handle redirect based on role
         } catch (err) {
             if (err instanceof AxiosError) {
                 setError(err.response?.data?.message || err.message);

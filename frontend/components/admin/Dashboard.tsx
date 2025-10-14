@@ -526,7 +526,7 @@ const Dashboard: React.FC = () => {
                                         </div>
                                         {tx.txHash && (
                                             <a
-                                                href={`https://suiscan.xyz/testnet/tx/${tx.txHash}`}
+                                                href={`https://u2uscan.xyz/tx/${tx.txHash}`}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 hover:underline"

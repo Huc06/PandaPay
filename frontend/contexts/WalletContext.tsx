@@ -84,14 +84,14 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     //                     prev?.address ||
     //                     address ||
     //                     "",
-    //                 balance: parseFloat(response.balance.sui) / 1000000000, // Convert MIST to SUI
+    //                 balance: parseFloat(response.balance.u2u) / 1e18, // Convert Wei to U2U
     //                 tokens:
     //                     response.balance.coins?.map((coin: any) => ({
-    //                         symbol: coin.type.includes("SUI")
-    //                             ? "SUI"
+    //                         symbol: coin.type.includes("U2U")
+    //                             ? "U2U"
     //                             : "UNKNOWN",
-    //                         name: coin.type.includes("SUI")
-    //                             ? "Sui Token"
+    //                         name: coin.type.includes("U2U")
+    //                             ? "U2U Token"
     //                             : "Unknown Token",
     //                         balance: parseFloat(coin.balance) / 1000000000,
     //                     })) || [],

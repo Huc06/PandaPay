@@ -69,7 +69,7 @@ export default function MerchantRecentTransactions() {
                         <div className="text-right">
                             <div className="text-xs font-semibold">
                                 {Number(tx.amount).toFixed(2)}{" "}
-                                {tx.currency || "SUI"}
+                                {tx.currency || "U2U"}
                             </div>
                             <div
                                 className={`text-[10px] uppercase ${

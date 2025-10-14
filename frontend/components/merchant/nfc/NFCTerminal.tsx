@@ -90,7 +90,7 @@ function getStateData(state: PaymentState, amount: string): StateData {
                 showCancel: false,
                 showNewPayment: true,
                 transactionId: "TXN_1727831116091",
-                transactionAmount: "10 SUI",
+                transactionAmount: "10 U2U",
             };
         case "failed":
             return {
@@ -121,6 +121,7 @@ export default function NFCTerminal() {
     const [paymentResult, setPaymentResult] = useState<PaymentResult | null>(
         null
     );
+    const [merchantAddress, setMerchantAddress] = useState<string>("");
 
     const changeHandler = (e: React.ChangeEvent<HTMLInputElement>) => {
         // Get the value from the input field
@@ -133,15 +134,39 @@ export default function NFCTerminal() {
 
     const data = getStateData(currentState, amount);
 
+    const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL ||
+        `http://${window.location.hostname}:8080`;
+
     // Check server health and NFC support on load
     useEffect(() => {
         checkServerHealth();
         checkNFCSupport();
+        loadMerchantAddress();
     }, []);
 
-    const backendUrl =
-        process.env.NEXT_PUBLIC_BACKEND_URL ||
-        `http://${window.location.hostname}:8080`;
+    const loadMerchantAddress = async () => {
+        try {
+            const token = localStorage.getItem("authToken");
+            if (!token) return;
+
+            const response = await fetch(`${backendUrl}/api/user/profile`, {
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.user?.walletAddress) {
+                    setMerchantAddress(data.user.walletAddress);
+                    console.log("✅ Loaded merchant address:", data.user.walletAddress);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load merchant address:", error);
+        }
+    };
 
     const checkServerHealth = async () => {
         try {
@@ -278,29 +303,68 @@ export default function NFCTerminal() {
     const processPayment = async () => {
         setCurrentState("processing");
         try {
+            // For now, we'll use the authenticated U2U Contract API
+            // TODO: Implement card UUID to wallet address mapping
+            // The backend should map the card UUID to the user's wallet address
+
+            // Get auth token from localStorage
+            const token = localStorage.getItem("authToken");
+            if (!token) {
+                throw new Error("User not authenticated");
+            }
+
+            // Use merchant address from profile, or fallback to hardcoded for backward compatibility
+            const targetMerchantAddress = merchantAddress || "0x0346225489680F5B7d5752ab92dBcA9510D62eEf";
+
+            console.log("🔥 Processing payment to merchant:", targetMerchantAddress);
+
             const res = await fetch(
-                `${backendUrl}/api/payment/process-direct`,
+                `${backendUrl}/api/u2u-contract/payment/create-for-user`,
                 {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
                     body: JSON.stringify({
-                        cardUuid,
-                        amount: parseFloat(amount),
-                        merchantId: "mch_593200537dff4e71",
-                        terminalId: "TERM_01",
-                        pin,
+                        merchantAddress: targetMerchantAddress,
+                        amount: amount, // Already a string
+                        paymentMethod: "POS",
                     }),
                 }
             );
-            const data: PaymentResult = await res.json();
-            setPaymentResult(data);
 
-            if (data.success) setCurrentState("success");
-            else setCurrentState("failed");
+            const data: any = await res.json();
+            console.log("U2U Contract payment response:", data);
+
+            // Transform U2U Contract response to PaymentResult format
+            if (data.success && data.data) {
+                setPaymentResult({
+                    success: true,
+                    message: `Payment successful! Transaction ID: ${data.data.transactionId}`,
+                    transaction: {
+                        transactionId: data.data.transactionId?.toString(),
+                        txHash: data.data.txHash,
+                        amount: parseFloat(amount),
+                        gasFee: data.data.gasFee || 0,
+                        totalAmount: data.data.totalAmount || parseFloat(amount),
+                        status: "completed",
+                        explorerUrl: data.data.explorerUrl || `https://u2uscan.xyz/tx/${data.data.txHash}`,
+                    },
+                });
+                setCurrentState("success");
+            } else {
+                setPaymentResult({
+                    success: false,
+                    error: data.message || data.error || "Payment failed",
+                });
+                setCurrentState("failed");
+            }
         } catch (e) {
+            console.error("Payment error:", e);
             setPaymentResult({
                 success: false,
-                error: "Network error",
+                error: e instanceof Error ? e.message : "Network error",
             });
             setCurrentState("failed");
         }
@@ -346,7 +410,7 @@ export default function NFCTerminal() {
                             disabled={currentState !== "ready"}
                             className={`${data.amountBg} border-2 border-[#000000] font-mono text-lg font-bold text-center`}
                         />
-                        <span className="font-bold">SUI</span>
+                        <span className="font-bold">U2U</span>
                     </div>
                 </div>
                 <div>
@@ -430,7 +494,7 @@ export default function NFCTerminal() {
                                 className="flex items-center gap-2"
                                 onClick={() =>
                                     window.open(
-                                        `https://suiscan.xyz/testnet/tx/${paymentResult?.transaction?.txHash}`,
+                                        `https://u2uscan.xyz/tx/${paymentResult?.transaction?.txHash}`,
                                         "_blank"
                                     )
                                 }
@@ -533,7 +597,7 @@ export default function NFCTerminal() {
                             1
                         </div>
                         <span className="text-xs">
-                            Enter the payment amount in SUI
+                            Enter the payment amount in U2U
                         </span>
                     </div>
                     <div className="flex items-start space-x-2">

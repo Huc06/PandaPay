@@ -2,10 +2,37 @@ import { Request, Response, NextFunction } from 'express';
 
 export class UserController {
   // Profile management
-  async getProfile(_req: Request, res: Response, next: NextFunction): Promise<void | Response> {
+  async getProfile(req: Request, res: Response, next: NextFunction): Promise<void | Response> {
     try {
-      res.json({ success: true, message: 'User controller method not implemented yet' });
-    } catch (error) { next(error); }
+      const user = (req as any).user; // From auth middleware
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          error: 'User not authenticated'
+        });
+      }
+
+      return res.json({
+        success: true,
+        user: {
+          id: user._id,
+          email: user.email,
+          fullName: user.fullName,
+          phoneNumber: user.phoneNumber,
+          role: user.role,
+          status: user.status,
+          walletAddress: user.walletAddress,
+          kycStatus: user.kycStatus,
+          dailyLimit: user.dailyLimit,
+          monthlyLimit: user.monthlyLimit,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
   }
 
   async updateProfile(_req: Request, res: Response, next: NextFunction): Promise<void | Response> {

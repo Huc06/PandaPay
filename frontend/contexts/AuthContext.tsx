@@ -58,7 +58,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const login = async (email: string, password: string) => {
         try {
             setLoading(true);
+            console.log("🔑 [AuthContext] Logging in...");
             const response = await loginAPI(email, password);
+            console.log("🔑 [AuthContext] Login API response:", response);
 
             if (response.success && response.tokens) {
                 // Store tokens
@@ -67,13 +69,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     "refreshToken",
                     response.tokens.refreshToken
                 );
+                console.log("✅ [AuthContext] Tokens stored");
 
                 const profile = await getUserProfileAPI();
+                console.log("👤 [AuthContext] Profile:", profile);
+
                 if (profile?.success && profile?.user) {
                     setUser(profile.user);
+                    console.log("👤 [AuthContext] User role:", profile.user.role);
 
-                    // Check merchant registration status
-                    if (profile.user.role === "merchant") {
+                    // Redirect based on role
+                    if (profile.user.role === "admin") {
+                        console.log("🚀 [AuthContext] Redirecting to /admin");
+                        window.location.href = "/admin";
+                    } else if (profile.user.role === "merchant") {
                         const merchantCredentials = localStorage.getItem(
                             "merchantCredentials"
                         );
@@ -90,20 +99,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                                     "merchantCredentials",
                                     JSON.stringify(credentials)
                                 );
+                                window.location.href = "/merchant";
                             }
+                        } else {
+                            console.log("🚀 [AuthContext] Redirecting to /merchant");
+                            window.location.href = "/merchant";
                         }
-
-                        // Redirect to merchant dashboard if credentials exist
-                        window.location.href = "/merchant";
+                    } else {
+                        // Regular user - redirect to account page
+                        console.log("🚀 [AuthContext] Redirecting to /account");
+                        window.location.href = "/account";
                     }
+                } else {
+                    console.error("❌ [AuthContext] Failed to get profile:", profile);
                 }
                 return true;
             } else {
-                console.error("Login failed:", response.message);
+                console.error("❌ [AuthContext] Login failed:", response.message);
                 return false;
             }
         } catch (error) {
-            console.error("Login error:", error);
+            console.error("❌ [AuthContext] Login error:", error);
             return false;
         } finally {
             setLoading(false);

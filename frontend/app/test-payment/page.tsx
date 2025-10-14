@@ -22,9 +22,14 @@ const TEST_DATA = {
     merchantId: "mch_593200537dff4e71",
     terminalId: "MAIN_COUNTER_01",
     pin: "1234",
-    customerEmail: "customer@test.com",
+    // Use existing funded accounts
+    customerEmail: "customer@demo.test",
+    customerPassword: "Demo1234!",
     walletAddress:
         "0x5f4da6e4b9b992e02a21f66381f6468cea1b6664ec25518b1fcbcae236bddca8",
+    // Test wallet with 0.5 U2U funded (already imported)
+    testPrivateKey: "0xa989063089f0050d6232c2c8f8b3558e5e16f4ed1f41b3d688e88501fdc98b5d",
+    testWalletAddress: "0x5bdd48d5014807d1B5bf684eA6F25f404104943F",
 };
 
 // Minimal Web NFC type declarations
@@ -89,11 +94,14 @@ export default function TestPaymentPage() {
     const [nfcSupported, setNfcSupported] = useState<boolean | null>(null);
     const [isScanning, setIsScanning] = useState(false);
     const [isWriting, setIsWriting] = useState(false);
+    const [autoLoginStatus, setAutoLoginStatus] = useState<string>("idle");
+    const [walletInfo, setWalletInfo] = useState<any>(null);
 
     // Check server health and NFC support on load
     useEffect(() => {
         checkServerHealth();
         checkNFCSupport();
+        autoLoginAndSetup();
     }, []);
 
     const checkServerHealth = async () => {
@@ -125,6 +133,151 @@ export default function TestPaymentPage() {
         } else {
             setNfcSupported(false);
             console.log("❌ Web NFC API is not supported");
+        }
+    };
+
+    const autoLoginAndSetup = async () => {
+        const backendUrl =
+            process.env.NEXT_PUBLIC_BACKEND_URL ||
+            `http://${window.location.hostname}:8080`;
+
+        try {
+            // Check if already logged in
+            const existingToken = localStorage.getItem("authToken");
+            if (existingToken) {
+                setAutoLoginStatus("checking existing token");
+                console.log("🔍 Found existing token, checking wallet...");
+
+                // Check wallet info
+                const walletResponse = await fetch(
+                    `${backendUrl}/api/evm-wallet/info/u2u`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${existingToken}`,
+                        },
+                    }
+                );
+
+                if (walletResponse.ok) {
+                    const walletData = await walletResponse.json();
+                    if (walletData.success && walletData.wallet) {
+                        setWalletInfo(walletData.wallet);
+                        setAutoLoginStatus("ready");
+                        console.log("✅ Already logged in with wallet:", walletData.wallet.address);
+                        return;
+                    }
+                }
+            }
+
+            // Try login directly (user already exists)
+            setAutoLoginStatus("logging in");
+            console.log("👤 Logging in with existing account:", TEST_DATA.customerEmail);
+
+            const loginResponse = await fetch(`${backendUrl}/api/auth/login`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    email: TEST_DATA.customerEmail,
+                    password: TEST_DATA.customerPassword,
+                }),
+            });
+
+            const authData = await loginResponse.json();
+
+            // Backend returns tokens.accessToken (new format)
+            const accessToken = authData.tokens?.accessToken || authData.token;
+
+            if (!accessToken) {
+                console.error("Login failed:", authData);
+                setAutoLoginStatus(`failed: ${authData.error || "No token"}`);
+
+                // Show error to user
+                alert(
+                    `❌ Auto-login failed!\n\n` +
+                    `Error: ${authData.error || "No token received"}\n\n` +
+                    `Account: ${TEST_DATA.customerEmail}\n\n` +
+                    `Possible solutions:\n` +
+                    `1. Wait a moment (rate limit)\n` +
+                    `2. Create account manually\n` +
+                    `3. Check backend logs`
+                );
+                return;
+            }
+
+            // Save token
+            localStorage.setItem("authToken", accessToken);
+            console.log("✅ Logged in successfully");
+
+            // Get wallet info (wallet already imported)
+            setAutoLoginStatus("checking wallet");
+            console.log("💼 Checking wallet info...");
+
+            const walletInfoResponse = await fetch(
+                `${backendUrl}/api/evm-wallet/info/u2u`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                    },
+                }
+            );
+
+            const walletData = await walletInfoResponse.json();
+
+            if (walletData.success && walletData.wallet) {
+                setWalletInfo(walletData.wallet);
+                setAutoLoginStatus("ready");
+                console.log("✅ Setup complete!");
+                console.log("   Address:", walletData.wallet.address);
+                console.log("   Balance:", walletData.wallet.balance, "U2U");
+            } else {
+                console.log("⚠️ No wallet found, trying to import...");
+                setAutoLoginStatus("importing wallet");
+
+                // Import wallet if not exists
+                const importResponse = await fetch(
+                    `${backendUrl}/api/evm-wallet/import`,
+                    {
+                        method: "POST",
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            privateKey: TEST_DATA.testPrivateKey,
+                            chain: "u2u",
+                        }),
+                    }
+                );
+
+                const importData = await importResponse.json();
+                console.log("Wallet import response:", importData);
+
+                // Get wallet info again
+                const retryWalletResponse = await fetch(
+                    `${backendUrl}/api/evm-wallet/info/u2u`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                        },
+                    }
+                );
+
+                const retryWalletData = await retryWalletResponse.json();
+                if (retryWalletData.success && retryWalletData.wallet) {
+                    setWalletInfo(retryWalletData.wallet);
+                    setAutoLoginStatus("ready");
+                    console.log("✅ Wallet imported and ready!");
+                    console.log("   Address:", retryWalletData.wallet.address);
+                    console.log("   Balance:", retryWalletData.wallet.balance, "U2U");
+                } else {
+                    throw new Error("Failed to import wallet");
+                }
+            }
+        } catch (error) {
+            console.error("❌ Auto-login failed:", error);
+            setAutoLoginStatus("failed");
         }
     };
 
@@ -290,58 +443,11 @@ export default function TestPaymentPage() {
         }
     };
 
-    const initiatePaymentWithNFC = async (detectedUuid: string) => {
-        setStep("nfc-tap");
-        setIsProcessing(true);
-        setPosSession(null);
-        setPaymentResult(null);
-
-        try {
-            console.log(
-                "💳 Initiating payment with NFC card UUID:",
-                detectedUuid
-            );
-
-            const backendUrl =
-                process.env.NEXT_PUBLIC_BACKEND_URL ||
-                `http://${window.location.hostname}:8080`;
-
-            const response = await fetch(`${backendUrl}/api/pos/initiate`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    cardUuid: detectedUuid,
-                    amount: parseFloat(amount),
-                    merchantId: TEST_DATA.merchantId,
-                    terminalId: TEST_DATA.terminalId,
-                    description: "NFC Payment",
-                }),
-            });
-
-            const data: PosSessionResult = await response.json();
-            setPosSession(data);
-
-            if (data.success) {
-                console.log("✅ Payment session created, showing PIN entry");
-                setStep("pin-entry");
-            } else {
-                console.log("❌ Payment session failed:", data.error);
-                setStep("completed");
-            }
-        } catch (error) {
-            console.error("Payment initiation error:", error);
-            setPosSession({
-                success: false,
-                error: `Connection error: ${
-                    error instanceof Error ? error.message : "Unknown error"
-                }`,
-            });
-            setStep("completed");
-        } finally {
-            setIsProcessing(false);
-        }
+    const initiatePaymentWithNFC = async (_detectedUuid: string) => {
+        // NFC payment now directly processes payment without POS session
+        // Skip to processing step immediately
+        setStep("processing");
+        await processPayment();
     };
 
     const simulateNFCTap = async () => {
@@ -358,27 +464,57 @@ export default function TestPaymentPage() {
                 process.env.NEXT_PUBLIC_BACKEND_URL ||
                 `http://${window.location.hostname}:8080`;
 
+            // Get auth token from localStorage
+            const token = localStorage.getItem("authToken");
+            if (!token) {
+                throw new Error("User not authenticated. Please log in first.");
+            }
+
+            // Use U2U Contract authenticated API
             const response = await fetch(
-                `${backendUrl}/api/payment/process-direct`,
+                `${backendUrl}/api/u2u-contract/payment/create-for-user`,
                 {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        cardUuid: cardUuid,
-                        amount: parseFloat(amount),
-                        merchantId: TEST_DATA.merchantId,
-                        terminalId: TEST_DATA.terminalId,
-                        pin: pin,
+                        merchantAddress: "0x5A460fE9432355Fd723A8D330Af7F8840D88748D", // TODO: Get from merchant profile
+                        amount: amount, // Already a string
+                        paymentMethod: "POS",
                     }),
                 }
             );
 
-            const data: PaymentResult = await response.json();
-            setPaymentResult(data);
+            const data: any = await response.json();
+            console.log("U2U Contract payment response:", data);
+
+            // Transform U2U Contract response to PaymentResult format
+            if (data.success && data.data) {
+                setPaymentResult({
+                    success: true,
+                    message: `Payment successful! Transaction ID: ${data.data.transactionId}`,
+                    transaction: {
+                        transactionId: data.data.transactionId?.toString() || "",
+                        txHash: data.data.txHash,
+                        amount: parseFloat(amount),
+                        gasFee: 0.0001, // Estimate
+                        totalAmount: parseFloat(amount) + 0.0001,
+                        status: "completed",
+                        explorerUrl: `https://u2uscan.xyz/tx/${data.data.txHash}`,
+                    },
+                });
+            } else {
+                setPaymentResult({
+                    success: false,
+                    error: data.message || data.error || "Payment failed",
+                    code: data.code,
+                });
+            }
             setStep("completed");
         } catch (error) {
+            console.error("Payment error:", error);
             setPaymentResult({
                 success: false,
                 error: `Connection error: ${
@@ -440,23 +576,71 @@ export default function TestPaymentPage() {
                 <h1 className="text-3xl font-bold mb-2">
                     NFC Payment Test Page
                 </h1>
-                <div className="flex items-center gap-2">
-                    <Badge
-                        variant={
-                            serverStatus === "online"
-                                ? "default"
-                                : "destructive"
-                        }
-                    >
-                        Backend: {serverStatus}
-                    </Badge>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={checkServerHealth}
-                    >
-                        Refresh
-                    </Button>
+                <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                        <Badge
+                            variant={
+                                serverStatus === "online"
+                                    ? "default"
+                                    : "destructive"
+                            }
+                        >
+                            Backend: {serverStatus}
+                        </Badge>
+                        <Badge
+                            variant={
+                                autoLoginStatus === "ready"
+                                    ? "default"
+                                    : autoLoginStatus.startsWith("failed")
+                                    ? "destructive"
+                                    : "secondary"
+                            }
+                        >
+                            Auth: {autoLoginStatus}
+                        </Badge>
+                        {walletInfo && (
+                            <Badge variant="outline">
+                                Balance: {walletInfo.balance} U2U
+                            </Badge>
+                        )}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={checkServerHealth}
+                        >
+                            Refresh
+                        </Button>
+                        {autoLoginStatus.startsWith("failed") && (
+                            <Button
+                                variant="default"
+                                size="sm"
+                                onClick={autoLoginAndSetup}
+                            >
+                                Retry Login
+                            </Button>
+                        )}
+                    </div>
+                    {walletInfo && (
+                        <div className="text-sm text-gray-600">
+                            <span className="font-mono">
+                                {walletInfo.address?.slice(0, 10)}...
+                                {walletInfo.address?.slice(-8)}
+                            </span>
+                        </div>
+                    )}
+                    {autoLoginStatus.startsWith("failed") && (
+                        <Alert variant="destructive">
+                            <XCircle className="h-4 w-4" />
+                            <AlertDescription>
+                                <strong>Auto-login failed.</strong> Please create account manually at{" "}
+                                <a href="/" className="underline">home page</a> or use these credentials:
+                                <br />
+                                Email: {TEST_DATA.customerEmail}
+                                <br />
+                                Password: {TEST_DATA.customerPassword}
+                            </AlertDescription>
+                        </Alert>
+                    )}
                 </div>
             </div>
 
@@ -468,7 +652,7 @@ export default function TestPaymentPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
-                            <Label htmlFor="amount">Amount (SUI)</Label>
+                            <Label htmlFor="amount">Amount (U2U)</Label>
                             <Input
                                 id="amount"
                                 type="number"
@@ -631,7 +815,10 @@ export default function TestPaymentPage() {
                                     )}
                                     <Button
                                         onClick={simulateNFCTap}
-                                        disabled={serverStatus !== "online"}
+                                        disabled={
+                                            serverStatus !== "online" ||
+                                            autoLoginStatus !== "ready"
+                                        }
                                         variant="outline"
                                     >
                                         Manual Test
@@ -796,12 +983,12 @@ export default function TestPaymentPage() {
                                         <p>
                                             <strong>Amount:</strong>{" "}
                                             {paymentResult.transaction.amount}{" "}
-                                            SUI
+                                            U2U
                                         </p>
                                         <p>
                                             <strong>Gas Fee:</strong>{" "}
                                             {paymentResult.transaction.gasFee}{" "}
-                                            SUI
+                                            U2U
                                         </p>
                                         <p>
                                             <strong>Total:</strong>{" "}
@@ -809,7 +996,7 @@ export default function TestPaymentPage() {
                                                 paymentResult.transaction
                                                     .totalAmount
                                             }{" "}
-                                            SUI
+                                            U2U
                                         </p>
                                     </div>
                                 </div>
@@ -827,8 +1014,7 @@ export default function TestPaymentPage() {
                                             size="sm"
                                             onClick={() =>
                                                 window.open(
-                                                    paymentResult.transaction
-                                                        ?.explorerUrl,
+                                                    `https://u2uscan.xyz/tx/${paymentResult.transaction?.txHash}`,
                                                     "_blank"
                                                 )
                                             }

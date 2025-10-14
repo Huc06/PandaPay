@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatCurrency(
     amount: number,
-    currency: string = "SUI"
+    currency: string = "U2U"
 ): string {
     if (currency === "VND") {
         return new Intl.NumberFormat("vi-VN", {
@@ -53,11 +53,12 @@ export function formatTxHash(hash: string): string {
 //   };
 // }
 
-export function validateSuiAddress(address: string): boolean {
-    return /^0x[a-fA-F0-9]{64}$/.test(address);
+export function validateU2UAddress(address: string): boolean {
+    // U2U addresses are 40 characters (like Ethereum)
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
 export function calculateGasFee(gasUsed: number): number {
-    // Convert from MIST to SUI
-    return gasUsed / 1_000_000_000;
+    // Convert from Wei to U2U (1 U2U = 10^18 Wei)
+    return gasUsed / 1e18;
 }

@@ -4,8 +4,12 @@ import { authenticate, authorize } from '../middleware/auth.middleware';
 import { paymentLimiter } from '../middleware/rateLimit.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { paymentValidators } from '../validators/payment.validator';
+import paymentTestRoutes from './payment-test.routes';
 
 const router = Router();
+
+// Test routes (no authentication required)
+router.use('/test', paymentTestRoutes);
 
 // Public routes
 router.post(

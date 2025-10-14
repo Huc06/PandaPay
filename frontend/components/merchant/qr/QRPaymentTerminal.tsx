@@ -219,7 +219,7 @@ export default function QRPaymentTerminal() {
                             placeholder="0.00"
                             className="border-4 border-black font-mono text-lg font-bold text-center"
                         />
-                        <span className="font-extrabold">SUI</span>
+                        <span className="font-extrabold">U2U</span>
                     </div>
                 </div>
 
@@ -305,7 +305,7 @@ export default function QRPaymentTerminal() {
                                                                     ?.transaction
                                                                     ?.amount
                                                             }{" "}
-                                                            SUI
+                                                            U2U
                                                         </p>
                                                         <p className="text-green-700 text-xs">
                                                             Gas:{" "}
@@ -314,7 +314,7 @@ export default function QRPaymentTerminal() {
                                                                     ?.transaction
                                                                     ?.gasFee
                                                             }{" "}
-                                                            SUI
+                                                            U2U
                                                         </p>
 
                                                         <p className="text-green-700 text-xs">
@@ -348,7 +348,7 @@ export default function QRPaymentTerminal() {
                                         className="mx-auto mt-4 flex items-center gap-2"
                                         onClick={() =>
                                             window.open(
-                                                `https://suiscan.xyz/testnet/tx/${paymentResult?.transaction?.txHash}`,
+                                                `https://u2uscan.xyz/tx/${paymentResult?.transaction?.txHash}`,
                                                 "_blank"
                                             )
                                         }
@@ -365,7 +365,7 @@ export default function QRPaymentTerminal() {
                                     </p>
                                     {/* <p>
                                         <strong>Amount:</strong>{" "}
-                                        {merchantRequest.amount} SUI
+                                        {merchantRequest.amount} U2U
                                     </p> */}
                                     <p>
                                         <strong>Merchant ID:</strong>{" "}

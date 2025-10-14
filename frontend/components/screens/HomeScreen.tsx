@@ -22,7 +22,8 @@ import { Card, User } from "@/types";
 import {
     getUserCardsAPI,
     getUserProfileAPI,
-    getWalletBalanceAPI,
+    getEVMWalletInfoAPI,
+    createU2UPaymentForUserAPI,
 } from "@/lib/api-client";
 import { AxiosError } from "axios";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,9 +33,11 @@ import { PaymentResult } from "../merchant/nfc/types";
 
 interface QrPayload {
     requestId: string;
-    amount: number;
-    merchantId: string;
+    amount: string; // U2U amount as string
+    merchantAddress: string; // U2U wallet address (0x...)
+    merchantId?: string; // Optional legacy merchant ID
     currency: string;
+    paymentMethod?: "POS" | "QR";
     description?: string;
 }
 
@@ -111,13 +114,23 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                     result[0].rawValue
                 );
 
-                // Validate required fields
+                // Validate required fields for U2U Contract payment
                 if (
                     !scannedPayload.requestId ||
                     !scannedPayload.amount ||
-                    !scannedPayload.merchantId
+                    !scannedPayload.merchantAddress
                 ) {
-                    throw new Error("Missing required payment information");
+                    throw new Error("Missing required payment information (requestId, amount, or merchantAddress)");
+                }
+
+                // Validate merchant address format (0x + 40 hex chars)
+                if (!/^0x[0-9a-fA-F]{40}$/.test(scannedPayload.merchantAddress)) {
+                    throw new Error("Invalid merchant address format");
+                }
+
+                // Set default payment method if not specified
+                if (!scannedPayload.paymentMethod) {
+                    scannedPayload.paymentMethod = "QR";
                 }
 
                 setQrPayload(scannedPayload);
@@ -126,7 +139,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                 console.log("✅ QR data parsed, moving to payment details");
             } catch (error) {
                 console.error("❌ Failed to parse QR data:", error);
-                setScanError("Invalid QR code format. Please try again.");
+                setScanError(error instanceof Error ? error.message : "Invalid QR code format. Please try again.");
             }
         }
     };
@@ -145,56 +158,66 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         setScanError("");
     };
 
-    // Process payment
+    // Process payment using U2U Contract
     const handlePaymentConfirm = async () => {
-        if (!qrPayload || !pin) {
-            alert("Please enter your PIN");
+        if (!qrPayload) {
+            alert("Invalid payment data");
             return;
         }
+
+        // PIN is not needed anymore since we use backend-managed private keys
+        // But we keep it in the UI for user confirmation/security
 
         setCurrentStep(PaymentStep.PROCESSING);
 
         try {
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/payment/process-direct`,
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
+            console.log("💰 Creating U2U Contract payment...", {
+                merchantAddress: qrPayload.merchantAddress,
+                amount: qrPayload.amount,
+                paymentMethod: qrPayload.paymentMethod || "QR",
+            });
+
+            // Call authenticated U2U Contract API (no private key needed from frontend)
+            const response = await createU2UPaymentForUserAPI({
+                merchantAddress: qrPayload.merchantAddress,
+                amount: qrPayload.amount,
+                paymentMethod: qrPayload.paymentMethod || "QR",
+            });
+
+            console.log("✅ U2U Contract payment response:", response);
+
+            if (response.success && response.data) {
+                setPaymentResult({
+                    success: true,
+                    message: `Payment successful! Transaction ID: ${response.data.transactionId}`,
+                    transaction: {
+                        id: response.data.transactionId?.toString() || "",
+                        txHash: response.data.txHash,
+                        amount: parseFloat(qrPayload.amount),
+                        status: "completed",
                     },
-                    body: JSON.stringify({
-                        cardUuid: userCards[0].cardUuid,
-                        amount: qrPayload.amount,
-                        merchantId: qrPayload.merchantId,
-                        terminalId: qrPayload.merchantId,
-                        pin: pin,
-                        requestId: qrPayload.requestId,
-                    }),
-                }
-            );
+                });
 
-            const data: PaymentResult = await response.json();
-            console.log("Payment response:", data);
-
-            setPaymentResult(data);
-            setCurrentStep(PaymentStep.RESULT);
-
-            // Update wallet balance if payment successful
-            if (data.success && address) {
+                // Update wallet balance
                 try {
-                    const balanceResponse = await getWalletBalanceAPI(address);
-                    if (balanceResponse.success) {
-                        setWalletBalance(balanceResponse.balance);
+                    const balanceResponse = await getEVMWalletInfoAPI();
+                    if (balanceResponse.success && balanceResponse.wallet) {
+                        setWalletBalance(parseFloat(balanceResponse.wallet.balance));
                     }
                 } catch (balanceError) {
                     console.warn("Failed to refresh balance:", balanceError);
                 }
+            } else {
+                throw new Error(response.message || "Payment failed");
             }
+
+            setCurrentStep(PaymentStep.RESULT);
         } catch (error) {
-            console.error("Payment failed:", error);
+            console.error("❌ U2U Contract payment failed:", error);
+            const errorMessage = error instanceof Error ? error.message : "Payment failed. Please try again.";
             setPaymentResult({
                 success: false,
-                message: "Payment failed. Please try again.",
+                message: errorMessage,
             });
             setCurrentStep(PaymentStep.RESULT);
         }
@@ -258,13 +281,19 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                     <div className="flex justify-between">
                         <span>AMOUNT:</span>
                         <span className="font-bold text-lg">
-                            ${qrPayload?.amount} {qrPayload?.currency}
+                            {qrPayload?.amount} {qrPayload?.currency}
+                        </span>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <span>MERCHANT ADDRESS:</span>
+                        <span className="font-bold break-all text-xs bg-neo-white p-1">
+                            {qrPayload?.merchantAddress}
                         </span>
                     </div>
                     <div className="flex justify-between">
-                        <span>MERCHANT:</span>
-                        <span className="font-bold break-all">
-                            {qrPayload?.merchantId}
+                        <span>METHOD:</span>
+                        <span className="font-bold">
+                            {qrPayload?.paymentMethod || "QR"}
                         </span>
                     </div>
                     <div className="flex justify-between">
@@ -377,12 +406,20 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                         TRANSACTION DETAILS
                     </h5>
                     <div className="space-y-1 font-mono text-xs text-neo-black">
-                        <div className="flex justify-between">
-                            <span>MERCHANT:</span>
-                            <span className="font-bold">
-                                {qrPayload.merchantId}
+                        <div className="flex flex-col gap-1">
+                            <span>MERCHANT ADDRESS:</span>
+                            <span className="font-bold break-all bg-neo-white p-1">
+                                {qrPayload.merchantAddress}
                             </span>
                         </div>
+                        {paymentResult.transaction?.id && (
+                            <div className="flex justify-between">
+                                <span>TX ID:</span>
+                                <span className="font-bold">
+                                    #{paymentResult.transaction.id}
+                                </span>
+                            </div>
+                        )}
                         <div className="flex justify-between">
                             <span>REQUEST ID:</span>
                             <span className="font-bold break-all">
@@ -396,19 +433,21 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                             </span>
                         </div>
 
-                        <Button
-                            variant="outline"
-                            className="mt-2 flex items-center gap-2 ml-auto"
-                            onClick={() =>
-                                window.open(
-                                    `https://suiscan.xyz/testnet/tx/${paymentResult?.transaction?.txHash}`,
-                                    "_blank"
-                                )
-                            }
-                        >
-                            <ExternalLink className="w-4 h-4" />
-                            View on Explorer
-                        </Button>
+                        {paymentResult?.transaction?.txHash && (
+                            <Button
+                                variant="outline"
+                                className="mt-2 flex items-center gap-2 ml-auto w-full"
+                                onClick={() =>
+                                    window.open(
+                                        `https://u2uscan.xyz/tx/${paymentResult.transaction?.txHash}`,
+                                        "_blank"
+                                    )
+                                }
+                            >
+                                <ExternalLink className="w-4 h-4" />
+                                View on U2U Explorer
+                            </Button>
+                        )}
                     </div>
                 </div>
             )}
@@ -460,21 +499,17 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                     setUserCards(cardsResponse.data.cards);
                 }
 
-                // Load wallet balance
-                if (address) {
-                    try {
-                        const balanceResponse = await getWalletBalanceAPI(
-                            address
-                        );
-                        if (balanceResponse.success) {
-                            setWalletBalance(balanceResponse.balance);
-                        }
-                    } catch (balanceError) {
-                        console.warn(
-                            "Failed to load wallet balance:",
-                            balanceError
-                        );
+                // Load wallet balance (U2U EVM)
+                try {
+                    const balanceResponse = await getEVMWalletInfoAPI();
+                    if (balanceResponse.success && balanceResponse.wallet) {
+                        setWalletBalance(parseFloat(balanceResponse.wallet.balance));
                     }
+                } catch (balanceError) {
+                    console.warn(
+                        "Failed to load wallet balance:",
+                        balanceError
+                    );
                 }
             } catch (err) {
                 console.error("Error loading user data:", err);
@@ -534,7 +569,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                         <div className="flex items-center justify-between gap-3">
                             <span className="text-4xl font-mono font-bold text-neo-black">
                                 {showBalance
-                                    ? `$${walletBalance.toFixed(2)} SUI`
+                                    ? `$${walletBalance.toFixed(2)} U2U`
                                     : "••••••"}
                             </span>
                             <button

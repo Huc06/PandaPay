@@ -299,6 +299,32 @@ export async function requestFaucetAPI() {
     return api.post("/wallet/faucet");
 }
 
+// EVM Wallet APIs (U2U)
+interface EVMWalletInfoResponse {
+    success: boolean;
+    wallet: {
+        address: string;
+        balance: string;
+        balanceInWei: string;
+        symbol: string;
+        transactionCount: number;
+        recentTransactionCount: number;
+        explorerUrl: string;
+    };
+    network: {
+        name: string;
+        chainId: number;
+        rpcUrl: string;
+        currentBlock: number;
+        explorerUrl: string;
+        isTestnet: boolean;
+    };
+}
+
+export async function getEVMWalletInfoAPI(): Promise<EVMWalletInfoResponse> {
+    return api.get("/evm-wallet/info/u2u");
+}
+
 interface UserLimitsResponse {
     success: boolean;
     limits: {
@@ -517,4 +543,98 @@ export async function getAdminTransactionsAPI(params?: {
     console.log("🌐 [API Client] Calling getAdminTransactionsAPI");
     console.log("🌐 [API Client] Params:", params);
     return api.get("/admin/transactions", { params });
+}
+
+// ==================== U2U Contract APIs ====================
+
+export interface U2URegisterMerchantParams {
+    businessName: string;
+    privateKey: string;
+}
+
+export interface U2UCreatePaymentParams {
+    merchantAddress: string;
+    amount: string; // in U2U tokens
+    paymentMethod: "POS" | "QR";
+    privateKey: string; // Customer's private key
+}
+
+export interface U2UConfirmPaymentParams {
+    transactionId: number;
+    privateKey: string; // Merchant's private key
+}
+
+export interface U2UPaymentResult {
+    success: boolean;
+    txHash: string;
+    transactionId?: number;
+}
+
+export async function registerU2UMerchantAPI(
+    params: U2URegisterMerchantParams
+): Promise<{ success: boolean; data: U2UPaymentResult; message?: string }> {
+    return api.post("/u2u-contract/merchant/register", params);
+}
+
+export async function createU2UPaymentAPI(
+    params: U2UCreatePaymentParams
+): Promise<{ success: boolean; data: U2UPaymentResult; message?: string }> {
+    return api.post("/u2u-contract/payment/create", params);
+}
+
+export async function confirmU2UPaymentAPI(
+    params: U2UConfirmPaymentParams
+): Promise<{ success: boolean; data: U2UPaymentResult; message?: string }> {
+    return api.post("/u2u-contract/payment/confirm", params);
+}
+
+export async function getU2UTransactionDetailsAPI(transactionId: number) {
+    return api.get(`/u2u-contract/transaction/${transactionId}`);
+}
+
+export async function getU2UMerchantInfoAPI(merchantAddress: string) {
+    return api.get(`/u2u-contract/merchant/${merchantAddress}`);
+}
+
+export async function getU2UContractInfoAPI() {
+    return api.get("/u2u-contract/info");
+}
+
+export async function getU2UPlatformStatsAPI() {
+    return api.get("/u2u-contract/stats");
+}
+
+// ==================== Authenticated U2U Contract APIs ====================
+// These endpoints use the user's stored encrypted private key (no private key needed from frontend)
+
+export interface U2UCreatePaymentForUserParams {
+    merchantAddress: string;
+    amount: string; // in U2U tokens
+    paymentMethod: "POS" | "QR";
+}
+
+export interface U2UConfirmPaymentForMerchantParams {
+    transactionId: number;
+}
+
+export interface U2URegisterMerchantForUserParams {
+    businessName: string;
+}
+
+export async function createU2UPaymentForUserAPI(
+    params: U2UCreatePaymentForUserParams
+): Promise<{ success: boolean; data: U2UPaymentResult; message?: string }> {
+    return api.post("/u2u-contract/payment/create-for-user", params);
+}
+
+export async function confirmU2UPaymentForMerchantAPI(
+    params: U2UConfirmPaymentForMerchantParams
+): Promise<{ success: boolean; data: U2UPaymentResult; message?: string }> {
+    return api.post("/u2u-contract/payment/confirm-for-merchant", params);
+}
+
+export async function registerU2UMerchantForUserAPI(
+    params: U2URegisterMerchantForUserParams
+): Promise<{ success: boolean; data: U2UPaymentResult; message?: string }> {
+    return api.post("/u2u-contract/merchant/register-for-user", params);
 }

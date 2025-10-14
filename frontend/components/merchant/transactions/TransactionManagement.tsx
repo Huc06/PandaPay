@@ -185,7 +185,7 @@ export default function TransactionManagement() {
                                     <div className="flex items-center gap-2">
                                         <div
                                             className={`w-3 h-3 border-2 border-black ${
-                                                tx.currency === "SUI"
+                                                tx.currency === "U2U"
                                                     ? "bg-[#ff005c]"
                                                     : "bg-[#00f0ff]"
                                             }`}
@@ -212,7 +212,7 @@ export default function TransactionManagement() {
                                     <div>Amount:</div>
                                     <div className="text-black font-bold text-right">
                                         {Number(tx.amount).toFixed(2)}{" "}
-                                        {tx.currency || "SUI"}
+                                        {tx.currency || "U2U"}
                                     </div>
                                     <div>Date/Time:</div>
                                     <div className="text-right">
@@ -318,7 +318,7 @@ export default function TransactionManagement() {
                                     <div>AMOUNT</div>
                                     <div className="font-bold text-right">
                                         {Number(selected.amount).toFixed(2)}{" "}
-                                        {selected.currency || "SUI"}
+                                        {selected.currency || "U2U"}
                                     </div>
                                     <div>STATUS</div>
                                     <div className="text-right">

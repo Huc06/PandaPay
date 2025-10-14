@@ -141,4 +141,50 @@ export const u2uContractValidators = {
       .matches(/^0x[0-9a-fA-F]{64}$/)
       .withMessage('Invalid private key format'),
   ],
+
+  // Authenticated user endpoints (no private key required, uses stored key)
+  createPaymentForUser: [
+    body('merchantAddress')
+      .trim()
+      .notEmpty()
+      .withMessage('Merchant address is required')
+      .matches(/^0x[0-9a-fA-F]{40}$/)
+      .withMessage('Invalid merchant address format'),
+    body('amount')
+      .trim()
+      .notEmpty()
+      .withMessage('Amount is required')
+      .isDecimal()
+      .withMessage('Amount must be a valid number')
+      .custom((value) => {
+        const num = parseFloat(value);
+        if (num <= 0) {
+          throw new Error('Amount must be greater than 0');
+        }
+        return true;
+      }),
+    body('paymentMethod')
+      .trim()
+      .notEmpty()
+      .withMessage('Payment method is required')
+      .isIn(['POS', 'QR'])
+      .withMessage('Payment method must be POS or QR'),
+  ],
+
+  confirmPaymentForMerchant: [
+    body('transactionId')
+      .notEmpty()
+      .withMessage('Transaction ID is required')
+      .isInt({ min: 0 })
+      .withMessage('Transaction ID must be a positive integer'),
+  ],
+
+  registerMerchantForUser: [
+    body('businessName')
+      .trim()
+      .notEmpty()
+      .withMessage('Business name is required')
+      .isLength({ min: 3, max: 100 })
+      .withMessage('Business name must be between 3 and 100 characters'),
+  ],
 };

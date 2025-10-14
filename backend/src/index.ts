@@ -3,7 +3,7 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
+// import { WebSocketServer } from 'ws';
 import dotenv from 'dotenv';
 import 'express-async-errors';
 
@@ -17,6 +17,7 @@ import { initSuiClient } from './config/sui.config';
 
 // Import services
 import { U2UContractService } from './services/u2u-contract.service';
+import { socketService } from './services/socket.service';
 
 // Import middleware
 import { corsMiddleware } from './middleware/cors.middleware';
@@ -28,7 +29,7 @@ import routes from './routes';
 
 // Import utils
 import logger from './utils/logger';
-import { setupWebSocket } from './utils/websocket';
+// import { setupWebSocket } from './utils/websocket';
 
 const app: Application = express();
 const PORT = process.env.PORT || 8080;
@@ -37,9 +38,9 @@ const HOST = process.env.HOST || 'localhost';
 // Create HTTP server
 const server = createServer(app);
 
-// Setup WebSocket
-const wss = new WebSocketServer({ server, path: '/ws' });
-setupWebSocket(wss);
+// Setup WebSocket (Old WS - Commented out, using Socket.IO instead)
+// const wss = new WebSocketServer({ server, path: '/ws' });
+// setupWebSocket(wss);
 
 // Middleware
 app.use(helmet({
@@ -108,11 +109,15 @@ async function startServer() {
     U2UContractService.initialize(u2uChain);
     logger.info('✅ U2U Contract Service initialized');
 
+    // Initialize Socket.IO
+    socketService.initialize(server);
+    logger.info('✅ Socket.IO service initialized');
+
     // Start server
     server.listen(PORT, () => {
       logger.info(`🚀 Server running on http://${HOST}:${PORT}`);
       logger.info(`📝 Environment: ${process.env.NODE_ENV}`);
-      logger.info(`🔌 WebSocket server running on ws://${HOST}:${PORT}/ws`);
+      logger.info(`🔌 Socket.IO server running on http://${HOST}:${PORT}`);
     });
 
   } catch (error) {

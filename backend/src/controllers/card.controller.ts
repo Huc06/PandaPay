@@ -56,13 +56,31 @@ export class CardController {
     return number;
   }
 
-  async getUserCards(_req: Request, res: Response, next: NextFunction): Promise<void | Response> {
+  async getUserCards(req: Request, res: Response, next: NextFunction): Promise<void | Response> {
     try {
-      res.json({
+      const userId = (req as any).user._id;
+
+      const cards = await Card.find({ userId }).sort({ createdAt: -1 });
+
+      return res.json({
         success: true,
-        message: 'Card controller method not implemented yet',
+        data: {
+          cards: cards.map(card => ({
+            id: card._id,
+            cardUuid: card.cardUuid,
+            cardType: card.cardType,
+            cardNumber: card.cardNumber,
+            isActive: card.isActive,
+            isPrimary: card.isPrimary,
+            issueDate: card.issueDate,
+            expiryDate: card.expiryDate,
+            createdAt: card.createdAt,
+            updatedAt: card.updatedAt
+          }))
+        }
       });
     } catch (error) {
+      logger.error('Get user cards error:', error);
       next(error);
     }
   }

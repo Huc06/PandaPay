@@ -96,10 +96,10 @@ export default function MerchantTerminal() {
                                             {stats
                                                 ? `${Number(
                                                       stats.today.volume || 0
-                                                  ).toFixed(2)} SUI`
+                                                  ).toFixed(2)} U2U`
                                                 : statsLoading
                                                 ? "..."
-                                                : "0.00 SUI"}
+                                                : "0.00 U2U"}
                                         </div>
                                         <div className="text-sm text-gray-600 uppercase">
                                             TODAY&apos;S SALES

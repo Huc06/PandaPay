@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { U2UContractController } from '../controllers/u2u-contract.controller';
 import { validate } from '../middleware/validation.middleware';
 import { u2uContractValidators } from '../validators/u2u-contract.validator';
+import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
 
@@ -76,6 +77,29 @@ router.post(
   '/platform/fee',
   validate(u2uContractValidators.updatePlatformFee),
   U2UContractController.updatePlatformFee
+);
+
+// Authenticated user endpoints (using stored encrypted private keys)
+// These endpoints decrypt the user's private key from the database
+router.post(
+  '/payment/create-for-user',
+  authenticate,
+  validate(u2uContractValidators.createPaymentForUser),
+  U2UContractController.createPaymentForUser
+);
+
+router.post(
+  '/payment/confirm-for-merchant',
+  authenticate,
+  validate(u2uContractValidators.confirmPaymentForMerchant),
+  U2UContractController.confirmPaymentForMerchant
+);
+
+router.post(
+  '/merchant/register-for-user',
+  authenticate,
+  validate(u2uContractValidators.registerMerchantForUser),
+  U2UContractController.registerMerchantForUser
 );
 
 export default router;

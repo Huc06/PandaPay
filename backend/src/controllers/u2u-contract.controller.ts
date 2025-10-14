@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import { U2UContractService } from '../services/u2u-contract.service';
+import { User } from '../models/User.model';
+import { decryptPrivateKey } from '../services/encryption.service';
 import logger from '../utils/logger';
 
 export class U2UContractController {
@@ -410,6 +412,196 @@ export class U2UContractController {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : 'Failed to get contract information',
+      });
+    }
+  }
+
+  /**
+   * Create payment for authenticated user (using stored private key)
+   * POST /api/u2u-contract/payment/create-for-user
+   */
+  static async createPaymentForUser(req: Request, res: Response): Promise<any> {
+    try {
+      const userId = (req as any).user?.id;
+      const { merchantAddress, amount, paymentMethod } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'User not authenticated',
+        });
+      }
+
+      if (!merchantAddress || !amount || !paymentMethod) {
+        return res.status(400).json({
+          success: false,
+          error: 'Merchant address, amount, and payment method are required',
+        });
+      }
+
+      // Get user with encrypted private key
+      const user = await User.findById(userId).select('+evmEncryptedPrivateKey');
+      if (!user || !user.evmWalletAddress || !user.evmEncryptedPrivateKey) {
+        return res.status(400).json({
+          success: false,
+          error: 'User does not have a U2U wallet. Please create one first.',
+        });
+      }
+
+      // Decrypt private key
+      const privateKey = decryptPrivateKey(user.evmEncryptedPrivateKey);
+
+      // Create payment using U2U Contract
+      const result = await U2UContractService.createPayment({
+        merchantAddress,
+        amount,
+        paymentMethod,
+        privateKey,
+      });
+
+      logger.info('Payment created for user:', {
+        userId: user._id,
+        userAddress: user.evmWalletAddress,
+        merchantAddress,
+        amount,
+        txHash: result.txHash,
+        transactionId: result.transactionId,
+      });
+
+      return res.json({
+        success: true,
+        data: result,
+        message: 'Payment created successfully',
+      });
+    } catch (error) {
+      logger.error('Create payment for user error:', error);
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to create payment',
+      });
+    }
+  }
+
+  /**
+   * Confirm payment for authenticated merchant (using stored private key)
+   * POST /api/u2u-contract/payment/confirm-for-merchant
+   */
+  static async confirmPaymentForMerchant(req: Request, res: Response): Promise<any> {
+    try {
+      const userId = (req as any).user?.id;
+      const { transactionId } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'User not authenticated',
+        });
+      }
+
+      if (transactionId === undefined) {
+        return res.status(400).json({
+          success: false,
+          error: 'Transaction ID is required',
+        });
+      }
+
+      // Get user with encrypted private key
+      const user = await User.findById(userId).select('+evmEncryptedPrivateKey');
+      if (!user || !user.evmWalletAddress || !user.evmEncryptedPrivateKey) {
+        return res.status(400).json({
+          success: false,
+          error: 'User does not have a U2U wallet',
+        });
+      }
+
+      // Decrypt private key
+      const privateKey = decryptPrivateKey(user.evmEncryptedPrivateKey);
+
+      // Confirm payment
+      const result = await U2UContractService.confirmPayment({
+        transactionId: Number(transactionId),
+        privateKey,
+      });
+
+      logger.info('Payment confirmed by merchant:', {
+        userId: user._id,
+        merchantAddress: user.evmWalletAddress,
+        transactionId,
+        txHash: result.txHash,
+      });
+
+      return res.json({
+        success: true,
+        data: result,
+        message: 'Payment confirmed successfully',
+      });
+    } catch (error) {
+      logger.error('Confirm payment for merchant error:', error);
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to confirm payment',
+      });
+    }
+  }
+
+  /**
+   * Register merchant for authenticated user (using stored private key)
+   * POST /api/u2u-contract/merchant/register-for-user
+   */
+  static async registerMerchantForUser(req: Request, res: Response): Promise<any> {
+    try {
+      const userId = (req as any).user?.id;
+      const { businessName } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({
+          success: false,
+          error: 'User not authenticated',
+        });
+      }
+
+      if (!businessName) {
+        return res.status(400).json({
+          success: false,
+          error: 'Business name is required',
+        });
+      }
+
+      // Get user with encrypted private key
+      const user = await User.findById(userId).select('+evmEncryptedPrivateKey');
+      if (!user || !user.evmWalletAddress || !user.evmEncryptedPrivateKey) {
+        return res.status(400).json({
+          success: false,
+          error: 'User does not have a U2U wallet. Please create one first.',
+        });
+      }
+
+      // Decrypt private key
+      const privateKey = decryptPrivateKey(user.evmEncryptedPrivateKey);
+
+      // Register merchant
+      const result = await U2UContractService.registerMerchant({
+        businessName,
+        privateKey,
+      });
+
+      logger.info('Merchant registered for user:', {
+        userId: user._id,
+        merchantAddress: user.evmWalletAddress,
+        businessName,
+        txHash: result.txHash,
+      });
+
+      return res.json({
+        success: true,
+        data: result,
+        message: 'Merchant registered successfully',
+      });
+    } catch (error) {
+      logger.error('Register merchant for user error:', error);
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to register merchant',
       });
     }
   }
