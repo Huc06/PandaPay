@@ -25,12 +25,17 @@ export class PaymentTestController {
       // Generate test merchant ID (in real app, get from authenticated user)
       const merchantId = `MCH_TEST_${uuidv4().slice(0, 8)}`;
 
+      // Get merchant address from environment or use test address
+      const merchantAddress = process.env.TEST_MERCHANT_ADDRESS || '0xe92bfd25182a0562f126a364881502761c7d20739585234288728f449fc51bda';
+
       // Create QR payload
       const qrPayload = {
         requestId,
-        amount: parseFloat(amount),
-        merchantId,
+        amount: parseFloat(amount).toString(), // Convert to string for consistency
+        merchantAddress, // Required U2U wallet address
+        merchantId, // Legacy field for backwards compatibility
         currency: 'U2U',
+        paymentMethod: 'QR' as const,
         description: description || undefined,
       };
 
