@@ -4,7 +4,7 @@ import { authenticate, authorize } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { adminValidators } from '../validators/admin.validator';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // All admin routes require authentication and admin role
 router.use(authenticate);

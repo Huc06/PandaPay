@@ -4,7 +4,7 @@ import { authenticate, authorize } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { merchantValidators } from '../validators/merchant.validator';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // Public routes
 router.get(

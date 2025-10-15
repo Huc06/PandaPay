@@ -9,7 +9,7 @@ import merchantRoutes from './merchant.routes';
 import adminRoutes from './admin.routes';
 import u2uContractRoutes from './u2u-contract.routes';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // Health check
 router.get('/', (_req, res) => {

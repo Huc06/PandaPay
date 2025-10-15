@@ -5,7 +5,7 @@ import { validate } from '../middleware/validation.middleware';
 import { authValidators } from '../validators/auth.validator';
 import { authenticate } from '../middleware/auth.middleware';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // Public routes
 router.post(

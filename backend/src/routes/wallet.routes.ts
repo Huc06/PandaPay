@@ -4,7 +4,7 @@ import { authenticate } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { walletValidators } from '../validators/wallet.validator';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // All wallet routes require authentication
 router.use(authenticate);

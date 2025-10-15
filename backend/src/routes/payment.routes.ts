@@ -6,7 +6,7 @@ import { validate } from '../middleware/validation.middleware';
 import { paymentValidators } from '../validators/payment.validator';
 import paymentTestRoutes from './payment-test.routes';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // Test routes (no authentication required)
 router.use('/test', paymentTestRoutes);

@@ -4,7 +4,7 @@ import { authenticate, authorize } from '../middleware/auth.middleware';
 import { validate } from '../middleware/validation.middleware';
 import { cardValidators } from '../validators/card.validator';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // All card routes require authentication
 router.use(authenticate);

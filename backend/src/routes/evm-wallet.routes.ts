@@ -15,7 +15,7 @@ const validateRequest = (req: any, res: any, next: any) => {
   return next();
 };
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 /**
  * @route   GET /api/evm-wallet/chains

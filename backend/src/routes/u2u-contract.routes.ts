@@ -4,7 +4,7 @@ import { validate } from '../middleware/validation.middleware';
 import { u2uContractValidators } from '../validators/u2u-contract.validator';
 import { authenticate } from '../middleware/auth.middleware';
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // Public endpoints
 // Get contract information

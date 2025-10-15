@@ -1,15 +1,7 @@
 import cors from 'cors';
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001', 
-  'https://localhost:3000',
-  'https://localhost:3001',
-  // Add production domains here
-];
-
 const corsOptions = {
-  origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+  origin: function (_origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
     // Allow all origins
     callback(null, true);
   },
