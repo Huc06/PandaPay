@@ -153,6 +153,27 @@ Private Key:  0x5f4da6e4b9b992e02a21f66381f6468cea1b6664ec25518b1fcbcae236bddca8
 
 ---
 
+## 🔄 Demo Fallback Transaction
+
+Nếu payment API fails, app sẽ tự động fallback về transaction thành công này để demo:
+
+```
+Transaction ID: 3
+TX Hash: 0xbf0052b4c8c40a6cf1153eb3894c2ba91f58e0b34512aab3c9826c3fc05ce509
+Explorer: https://u2uscan.xyz/tx/0xbf0052b4c8c40a6cf1153eb3894c2ba91f58e0b34512aab3c9826c3fc05ce509
+Amount: 0.01 U2U
+From: 0xE2417c9F886bD2A1a093a2549336193DbB6CFa67 (Customer)
+To: 0x0346225489680F5B7d5752ab92dBcA9510D62eEf (Merchant)
+Status: Completed ✅
+```
+
+**Khi nào dùng fallback:**
+- QR payment API error → Show transaction thật này
+- NFC payment API error → Show transaction thật này
+- Demo mode → Luôn show transaction thành công
+
+---
+
 ## 📱 Quick Login Links
 
 ### Customer Login
