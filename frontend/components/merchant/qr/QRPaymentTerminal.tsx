@@ -11,9 +11,11 @@ import { PaymentResult } from "../nfc/types";
 
 interface QrPayload {
     requestId: string;
-    amount: number;
-    merchantId: string;
+    amount: string; // U2U amount as string
+    merchantAddress: string; // Required U2U wallet address (0x...)
+    merchantId?: string; // Optional legacy merchant ID
     currency: string;
+    paymentMethod?: "POS" | "QR";
     description?: string;
 }
 
@@ -363,14 +365,20 @@ export default function QRPaymentTerminal() {
                                         <strong>Request ID:</strong>{" "}
                                         {merchantRequest.id}
                                     </p>
-                                    {/* <p>
-                                        <strong>Amount:</strong>{" "}
-                                        {merchantRequest.amount} U2U
-                                    </p> */}
                                     <p>
-                                        <strong>Merchant ID:</strong>{" "}
-                                        {merchantRequest.qrPayload.merchantId}
+                                        <strong>Amount:</strong>{" "}
+                                        {merchantRequest.qrPayload.amount} {merchantRequest.qrPayload.currency}
                                     </p>
+                                    <p className="break-all">
+                                        <strong>Merchant Address:</strong>{" "}
+                                        {merchantRequest.qrPayload.merchantAddress}
+                                    </p>
+                                    {merchantRequest.qrPayload.merchantId && (
+                                        <p>
+                                            <strong>Merchant ID:</strong>{" "}
+                                            {merchantRequest.qrPayload.merchantId}
+                                        </p>
+                                    )}
                                     {merchantRequest.qrPayload.description && (
                                         <p>
                                             <strong>Description: </strong>{" "}
