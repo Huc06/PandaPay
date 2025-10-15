@@ -48,6 +48,13 @@ Email:    merchant006@test.local
 Password: Demo1234!
 ```
 
+       "error": "Invalid token",
+     … +2 lines (ctrl+o to expand)
+
+● The merchant token expired. Let me login again:
+
+● Bash(curl -s -X POST http://localhost:8080/api/auth/login -H "Content-Type: application/json" -d @/tmp/merchant_login.json | tee
+      /tmp/merchant_login_result_new.json…) 
 ### Wallet Information
 ```
 Address:  0x0346225489680F5B7d5752ab92dBcA9510D62eEf
